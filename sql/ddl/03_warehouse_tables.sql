@@ -12,8 +12,6 @@ CREATE TABLE warehouse.dim_account (
     employees         INTEGER,
     office_location   TEXT,
     subsidiary_of     TEXT,
-    company_age_years INTEGER GENERATED ALWAYS AS
-        (EXTRACT(YEAR FROM CURRENT_DATE)::INT - year_established) STORED,
     loaded_at         TIMESTAMPTZ DEFAULT NOW()
 );
 

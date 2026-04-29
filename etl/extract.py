@@ -34,6 +34,12 @@ PRODUCT_NAME_FIXES = {
     "GTXPro": "GTX Pro",
 }
 
+# Sector spelling typo in accounts.csv (12 accounts affected).
+SECTOR_NAME_FIXES = {
+    "technolgy": "technology",
+}
+
+
 
 # ---------- Cleaning functions: one per source file ----------
 
@@ -42,6 +48,14 @@ def _clean_accounts(df: pd.DataFrame) -> pd.DataFrame:
     for col in ("account", "sector", "office_location", "subsidiary_of"):
         if col in df.columns:
             df[col] = df[col].astype("string").str.strip()
+
+    # Normalize known sector spelling inconsistencies
+    if "sector" in df.columns:
+        before_fix = (df["sector"] == "technolgy").sum()
+        df["sector"] = df["sector"].replace(SECTOR_NAME_FIXES)
+        if before_fix:
+            log.info("  normalized %d 'technolgy' values to 'technology'", before_fix)
+
     if "year_established" in df.columns:
         df["year_established"] = pd.to_numeric(df["year_established"], errors="coerce").astype("Int64")
     if "employees" in df.columns:

@@ -8,6 +8,7 @@ parquet snapshots to data/staging/.
 Parquet is roughly 5-10x smaller than CSV and preserves dtypes, which matters
 when this scales up. Same code, better behavior on big data.
 """
+
 from __future__ import annotations
 
 import sys
@@ -40,8 +41,8 @@ SECTOR_NAME_FIXES = {
 }
 
 
-
 # ---------- Cleaning functions: one per source file ----------
+
 
 def _clean_accounts(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = [c.strip().lower() for c in df.columns]
@@ -55,11 +56,14 @@ def _clean_accounts(df: pd.DataFrame) -> pd.DataFrame:
         df["sector"] = df["sector"].replace(SECTOR_NAME_FIXES)
         if before_fix:
             log.info("  normalized %d 'technolgy' values to 'technology'", before_fix)
-
     if "year_established" in df.columns:
-        df["year_established"] = pd.to_numeric(df["year_established"], errors="coerce").astype("Int64")
+        df["year_established"] = pd.to_numeric(
+            df["year_established"], errors="coerce"
+        ).astype("Int64")
     if "employees" in df.columns:
-        df["employees"] = pd.to_numeric(df["employees"], errors="coerce").astype("Int64")
+        df["employees"] = pd.to_numeric(df["employees"], errors="coerce").astype(
+            "Int64"
+        )
     if "revenue" in df.columns:
         df["revenue"] = pd.to_numeric(df["revenue"], errors="coerce")
     return df
@@ -119,9 +123,9 @@ def _clean_sales_pipeline(df: pd.DataFrame) -> pd.DataFrame:
 
 # (csv filename, parquet filename, cleaner function)
 SOURCES: list[tuple[str, str, Callable[[pd.DataFrame], pd.DataFrame]]] = [
-    ("accounts.csv",       "accounts.parquet",       _clean_accounts),
-    ("products.csv",       "products.parquet",       _clean_products),
-    ("sales_teams.csv",    "sales_teams.parquet",    _clean_sales_teams),
+    ("accounts.csv", "accounts.parquet", _clean_accounts),
+    ("products.csv", "products.parquet", _clean_products),
+    ("sales_teams.csv", "sales_teams.parquet", _clean_sales_teams),
     ("sales_pipeline.csv", "sales_pipeline.parquet", _clean_sales_pipeline),
 ]
 
@@ -131,7 +135,9 @@ def extract_one(csv_name: str, parquet_name: str, cleaner) -> int:
     csv_path = RAW_DIR / csv_name
     if not csv_path.exists():
         log.error("Missing source file: %s", csv_path)
-        log.error("Download the CRM + Sales dataset from Maven Analytics and place CSVs in data/raw/")
+        log.error(
+            "Download the CRM + Sales dataset from Maven Analytics and place CSVs in data/raw/"
+        )
         return -1
 
     log.info("Reading %s", csv_path.name)
@@ -168,7 +174,9 @@ def main() -> int:
 
     log.info(
         "Extract complete: %d rows across %d files (%d failures)",
-        total_rows, len(SOURCES) - failures, failures,
+        total_rows,
+        len(SOURCES) - failures,
+        failures,
     )
     return 0 if failures == 0 else 1
 

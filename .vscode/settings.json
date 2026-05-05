@@ -26,5 +26,6 @@
     "username": "crm_user",
     "askForPassword": true
   }
- ]
+],
+  "git.ignoreLimitWarning": true
 }

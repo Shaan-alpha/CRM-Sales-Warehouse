@@ -9,7 +9,11 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+.ruff_cache/
 .coverage
+
+# Claude Code
+.claude/settings.local.json
 
 # Data — keep folders, ignore contents
 data/raw/*

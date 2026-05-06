@@ -23,9 +23,7 @@ data/archive/*
 !data/staging/.gitkeep
 !data/archive/.gitkeep
 
-# Power BI
-powerbi/*.pbix
-!powerbi/.gitkeep
+# Power BI — keep .pbix tracked as the project deliverable
 
 # Docker volumes
 postgres_data/

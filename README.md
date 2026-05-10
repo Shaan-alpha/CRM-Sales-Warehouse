@@ -1,217 +1,187 @@
-# CRM + Sales Warehouse
+# CRM + Sales Warehouse: End-to-End Data Platform
 
-End-to-end data engineering project on the **Maven Analytics CRM + Sales** dataset. Raw operational CSVs are extracted, cleaned, and loaded into a containerised Postgres warehouse. The pipeline is orchestrated by **Apache Airflow (Astronomer)**, modeled with **dbt**, validated with SQL quality checks, and surfaced through a five-page Power BI executive dashboard.
+[![CRM Warehouse CI](https://github.com/shaan-alpha/CRM-Sales-Warehouse/actions/workflows/ci.yml/badge.svg)](https://github.com/shaan-alpha/CRM-Sales-Warehouse/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
+[![dbt](https://img.shields.io/badge/dbt-1.10.0-orange.svg)](https://www.getdbt.com/)
+[![Airflow](https://img.shields.io/badge/Airflow-Astro-red.svg)](https://www.astronomer.io/)
 
-**Stack:** Python 3.11 · Airflow · dbt · PostgreSQL 16 · Docker · Power BI
+A modern, production-grade data engineering project featuring a full ETL/ELT pipeline for the **Maven Analytics CRM + Sales** dataset. This platform extracts raw operational data, transforms it into a robust star schema using **dbt**, and delivers actionable insights through a 5-page **Power BI** executive dashboard.
 
-## Status
+---
 
-**✅ Complete.** Pipeline runs end-to-end and the dashboard ships in [`powerbi/powerbicrm_dashboard.pbix`](powerbi/powerbicrm_dashboard.pbix).
+## 🚀 Key Highlights
 
-## Dashboard
+- **Automated Orchestration**: End-to-end pipeline managed by **Apache Airflow (Astronomer)**.
+- **Modular Modeling**: Data transformation layer built with **dbt Core**, ensuring DRY principles and version-controlled SQL.
+- **Star Schema Architecture**: Optimized for analytical performance with conformed dimensions and clear fact grain.
+- **Enterprise Visualisation**: 5-page interactive Power BI report covering executive KPIs, agent performance, and pipeline health.
+- **Data Quality Framework**: Multi-stage validation including dbt tests, custom SQL checks, and schema enforcement.
+- **Containerised Infrastructure**: Fully portable environment using **Docker** and **Astro CLI**.
 
-A five-page executive dashboard built on the warehouse star schema.
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology | Description |
+| --- | --- | --- |
+| **Orchestration** | [Apache Airflow](https://airflow.apache.org/) | Pipeline scheduling and management via **Astro CLI**. |
+| **Transformation** | [dbt Core](https://www.getdbt.com/) | SQL modeling, testing, and documentation for the warehouse. |
+| **ETL / Scripting** | [Python 3.11](https://www.python.org/) | `pandas`, `SQLAlchemy`, `PyArrow` for high-performance processing. |
+| **Database** | [PostgreSQL 16](https://www.postgresql.org/) | Containerised warehouse with staging and analytical schemas. |
+| **Infrastructure** | [Docker](https://www.docker.com/) | Containerisation for consistent dev/prod environments. |
+| **Visualization** | [Power BI](https://powerbi.microsoft.com/) | Advanced DAX modeling and interactive dashboard design. |
+| **Quality/Linting** | [Ruff](https://beta.ruff.rs/) / [Pytest](https://pytest.org/) | Python code quality and unit testing. |
+| **CI/CD** | [GitHub Actions](https://github.com/features/actions) | Automated linting, testing, and DAG validation. |
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    A[Raw CSVs] -->|extract.py| B[Parquet Snapshots]
+    B -->|load_staging.py| C[(Postgres Staging)]
+    C -->|dbt run| D[(Postgres Warehouse)]
+    D -->|dbt test| D
+    D -->|quality_checks.py| E[Validated Data]
+    E -->|Direct Query/Import| F[Power BI Dashboard]
+    
+    subgraph Orchestration
+    G[Apache Airflow / Astro]
+    end
+    
+    G -.-> A
+    G -.-> B
+    G -.-> C
+    G -.-> D
+```
+
+The pipeline follows a **Medallion-style** approach modified for a Warehouse:
+1.  **Staging**: Raw data loaded into Postgres as-is from Parquet snapshots.
+2.  **Warehouse (dbt)**: Modular transformations create a cleaned, typed, and modeled Star Schema.
+3.  **Reporting**: Power BI consumes the `dw.*` schema for optimal report performance.
+
+---
+
+## 📊 Dashboard Overview
+
+The final output is a high-impact, 5-page executive report.
 
 ### 1. Executive Overview
-
 Won revenue, win rate, average deal size, and at-risk pipeline at a glance. Monthly trend and full pipeline funnel side by side.
-
 ![Executive Overview](docs/screenshots/01-executive-overview.png)
 
 ### 2. Agent Performance
-
 How 30 agents and 6 managers drive the revenue. Win-rate × deal-size archetypes, manager-level revenue per agent, and a sortable agent leaderboard.
-
 ![Agent Performance](docs/screenshots/02-agent-performance.png)
 
 ### 3. Pipeline Analysis
-
-Where the pipeline gets stuck and how to unstick it. Stalled-deal histogram, stage-to-stage funnel, and an interactive recovery-rate slider that projects revenue impact in real time.
-
+Where the pipeline gets stuck and how to unstick it. Stalled-deal histogram, stage-to-stage funnel, and an interactive recovery-rate slider.
 ![Pipeline Analysis](docs/screenshots/03-pipeline-analysis.png)
 
 ### 4. Product Deep Dive
-
-Volume vs. value — why product strategy isn't about deal counts. Scatter of won-deals × avg deal size, sector × product revenue heatmap, and a velocity table ranking products by revenue per active day.
-
+Volume vs. value — why product strategy isn't about deal counts. Velocity table ranking products by revenue per active day.
 ![Product Deep Dive](docs/screenshots/04-product-deep-dive.png)
 
 ### 5. Regional Analysis
-
-Three regions, three playbooks. Geographic revenue map, sector × region stacked bars, and a regional comparison table covering agents, opportunities, win rate, deal size, and revenue per agent.
-
+Geographic revenue map, sector × region stacked bars, and a regional comparison table covering key efficiency metrics.
 ![Regional Analysis](docs/screenshots/05-regional-analysis.png)
 
-### Data Model
+---
 
-Star schema directly from the warehouse (`dw.*` schema in Postgres) — five dimensions and one fact, plus calculation groups (`_Measures`), recovery-rate parameter, and a `RegionGeo` lookup for the map.
+## 📁 Project Structure
 
-![Data Model](docs/screenshots/06-data-model.png)
-
-## Architecture
-
-```
-CSV (data/raw)
-      │  extract.py
-      ▼
-Parquet snapshots (data/staging)
-      │  load_staging.py
-      ▼
-Postgres · staging schema
-      │
-      ▼
-┌──────────────────────────┐
-│    Apache Airflow        │
-│    (Orchestration)       │
-└──────────┬───────────────┘
-           │
-           ▼
-┌──────────────────────────┐
-│         dbt              │
-│    (Transformation)      │
-└──────────┬───────────────┘
-           │
-           ▼
-Postgres · warehouse schema (star)
-      │  quality_checks.py
-      ▼
-Power BI Desktop  →  powerbi/powerbicrm_dashboard.pbix
-```
-
-The pipeline is managed by **Astronomer (Airflow)**. The DAG defined in [`dags/crm_sales_pipeline.py`](dags/crm_sales_pipeline.py) orchestrates the end-to-end flow, while **dbt** (in [`crm_warehouse_dbt/`](crm_warehouse_dbt/)) handles the modular transformations within the warehouse.
-
-## Star schema
-
-| Layer | Tables |
-| --- | --- |
-| **Staging** (`stg.*`) | `accounts`, `products`, `sales_pipeline`, `sales_teams` — typed, deduped Parquet → Postgres |
-| **Warehouse** (`dw.*`) | `dim_date`, `dim_account`, `dim_product`, `dim_sales_agent`, `fact_sales`, plus `RegionGeo` lookup |
-
-Surrogate keys on every dim, conformed `date_key` across the model, fact grain = one row per opportunity in the sales pipeline.
-
-## Project structure
-
-```
+```text
 crm-sales-warehouse/
-├── .astro/                     # Astronomer CLI config
+├── .astro/                     # Astronomer CLI configuration
 ├── .github/workflows/          # CI/CD (GitHub Actions)
-├── crm_warehouse_dbt/          # dbt project for warehouse modeling
-├── dags/                       # Airflow DAGs
-├── etl/
-│   ├── extract.py              # CSV → cleaned parquet snapshots
-│   ├── load_staging.py         # parquet → Postgres staging
-│   ├── transform_warehouse.py  # (Legacy) staging → star schema
-│   ├── quality_checks.py       # row counts, nulls, PK/FK, freshness
-│   ├── run_pipeline.py         # (Legacy) orchestrator
-│   └── utils/
-│       ├── db.py               # SQLAlchemy engine + Postgres connection helpers
-│       └── logger.py
-├── sql/                        # Raw SQL for legacy transforms and checks
-├── powerbi/
-│   └── powerbicrm_dashboard.pbix   # final 5-page Power BI report
-├── data/
-│   ├── raw/                    # input CSVs (gitignored)
-│   ├── staging/                # parquet snapshots (gitignored)
-│   └── archive/                # historical pipeline runs (gitignored)
-├── docs/
-│   ├── data_dictionary.csv     # column-level definitions
-│   ├── roadmap.md              # build journal
-│   └── screenshots/            # dashboard screenshots
-├── docker-compose.yml          # Postgres 16 + pgAdmin
-├── Dockerfile                  # Astro runtime image
-├── requirements.txt
-├── .env.example
-└── README.md
+├── crm_warehouse_dbt/          # dbt project (models, macros, tests)
+├── dags/                       # Airflow DAG definitions
+├── etl/                        # Core ETL logic
+│   ├── extract.py              # CSV to Parquet snapshots
+│   ├── load_staging.py         # Parquet to Postgres staging
+│   ├── dbt_runner.py           # Helper to trigger dbt from Airflow
+│   └── quality_checks.py       # Custom SQL validation logic
+├── powerbi/                    # Power BI .pbix source file
+├── sql/                        # Raw SQL (DDL, manual transforms)
+├── data/                       # Local data storage (gitignored)
+│   ├── raw/                    # Input CSVs
+│   └── staging/                # Cleaned Parquet files
+├── docker-compose.yml          # Infrastructure setup (Postgres + pgAdmin)
+└── requirements.txt            # Python dependencies
 ```
 
-## Data
+---
 
-Source: [Maven Analytics — CRM + Sales](https://mavenanalytics.io/data-playground)
+## ⚙️ Local Setup
 
-Place these files in `data/raw/` (gitignored):
-- `accounts.csv`
-- `products.csv`
-- `sales_pipeline.csv`
-- `sales_teams.csv`
+### 1. Prerequisites
+- Docker & Docker Compose
+- [Astro CLI](https://www.astronomer.io/docs/astro/cli/install-cli) (Recommended for full pipeline)
+- Python 3.11+
 
-Column-level definitions live in [`docs/data_dictionary.csv`](docs/data_dictionary.csv).
+### 2. Infrastructure
+Choose your running mode:
+- **Full Suite (Airflow + Postgres)**:
+  ```bash
+  astro dev start
+  ```
+- **Warehouse Only (Postgres + pgAdmin)**:
+  ```bash
+  docker compose up -d
+  ```
 
-## Run it locally
-
-### 1. Start Infrastructure
-
-You can run the warehouse alone via Docker Compose, or the full orchestration suite via Astro.
-
-**Option A: Simple (Postgres + pgAdmin)**
-```powershell
-docker compose up -d
-```
-
-**Option B: Full (Airflow + Postgres)**
-```powershell
-astro dev start
-```
-
-### 2. Set up Python & dbt
-
-```powershell
+### 3. Python Environment
+```bash
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+source .venv/bin/activate  # Or .venv\Scripts\Activate.ps1 on Windows
 pip install -r requirements.txt
-# Install dbt-postgres if not present
-pip install dbt-postgres
-copy .env.example .env
 ```
 
-### 3. Initialize dbt
-
-```powershell
-cd crm_warehouse_dbt
-dbt debug
-dbt run
+### 4. Configuration
+Create a `.env` file based on `.env.example`:
+```bash
+POSTGRES_USER=crm_user
+POSTGRES_PASSWORD=crm_password
+POSTGRES_DB=crm_warehouse
 ```
 
-### 4. Drop the CSVs
+### 5. Initialize & Run
+1.  Place raw CSVs in `data/raw/`.
+2.  Access Airflow at `localhost:8080` and trigger the `crm_sales_warehouse_pipeline` DAG.
+3.  Alternatively, run dbt manually:
+    ```bash
+    cd crm_warehouse_dbt
+    dbt run
+    ```
 
-Place the four Maven Analytics CSVs in `data/raw/`.
+---
 
-### 5. Run the Airflow Pipeline
+## 🧪 Data Quality & Testing
 
-Access the Airflow UI at `localhost:8080` (default: `admin`/`admin`) and trigger the `crm_sales_warehouse_pipeline` DAG.
+We enforce high data standards at every step:
+- **dbt Tests**: Primary keys, relationships, and accepted values.
+- **Custom Checks**:
+    - **Parity**: Row count matching between staging and warehouse.
+    - **Freshness**: Ensuring data is up-to-date.
+    - **Referential Integrity**: Fact rows must resolve to valid dimensions.
+- **Python Quality**: **Ruff** for linting and **Pytest** for transformation logic.
 
-## CI/CD
+---
 
-This project uses **GitHub Actions** for:
-- **Linting**: Ruff for Python code quality.
-- **Testing**: Pytest for ETL logic.
-- **Validation**: Automated DAG integrity checks.
+## 🔧 Troubleshooting
 
-See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for details.
+- **dbt Pathing**: If running `dbt` from Airflow tasks fails, ensure the `DBT_PROJECT_DIR` in `etl/dbt_runner.py` matches your environment (default is set for Astro Docker).
+- **Postgres Connection**: If you cannot connect to Postgres from your host, ensure `localhost:5432` is not occupied and the container is healthy (`docker ps`).
+- **CSV Format**: Ensure CSV files from Maven Analytics are unmodified to prevent schema mismatch in `extract.py`.
 
-## Data-quality checks
+---
 
-Every pipeline run validates:
+## 📜 License & Acknowledgements
 
-- **Row counts** — staging vs. warehouse parity per source table
-- **Null discipline** — no nulls on primary-key columns or required dimension attributes
-- **Referential integrity** — every fact row resolves to a valid dim
-- **Freshness** — most-recent `close_date` in `fact_sales` is within an expected window
-- **Domain checks** — sector spelling normalised (`technolgy` → `technology`), deal stages limited to the known enum (Won / Lost / Engaging / Prospecting)
+- **Data Source**: [Maven Analytics — CRM + Sales](https://mavenanalytics.io/data-playground)
+- **License**: [MIT](LICENSE)
 
-A failed check halts the pipeline before the warehouse is updated.
-
-## Tools used
-
-| Layer | Tool |
-| --- | --- |
-| Source | Maven Analytics CRM + Sales (CSV) |
-| Extract / load / transform | Python 3.11, pandas, pyarrow, SQLAlchemy |
-| Database | PostgreSQL 16 (Docker) |
-| Admin | pgAdmin 4 (Docker) |
-| Quality | Plain SQL via `psycopg2` |
-| Visualisation | Power BI Desktop |
-| Container runtime | Docker Compose |
-
-## License
-
-[MIT](LICENSE)
+---
+*Built with ❤️ by Shaan*

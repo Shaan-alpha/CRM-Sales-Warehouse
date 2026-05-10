@@ -17,15 +17,18 @@
     "**/.pytest_cache": true,
     "**/*.egg-info": true
   },
-  "sqltools.connections": [{
-    "name": "CRM Warehouse (local)",
-    "driver": "PostgreSQL",
-    "server": "localhost",
-    "port": 5432,
-    "database": "crm_warehouse",
-    "username": "crm_user",
-    "askForPassword": true
-  }
-],
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "askForPassword": true,
+      "driver": "PostgreSQL",
+      "name": "CRM Warehouse",
+      "database": "postgres",
+      "username": "postgres"
+    }
+  ],
   "git.ignoreLimitWarning": true
 }

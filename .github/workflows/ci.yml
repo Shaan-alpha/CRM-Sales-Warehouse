@@ -25,6 +25,10 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Install Airflow
+        run: |
+          pip install apache-airflow
+
       - name: Run Ruff Linter
         run: |
           ruff check .
@@ -35,4 +39,4 @@ jobs:
 
       - name: Validate DAG Imports
         run: |
-          python -m py_compile dags/*.py
+          python -c "import dags.crm_sales_pipeline"

@@ -16,11 +16,11 @@ load_dotenv()
 
 def _cfg() -> dict[str, str]:
     return {
-        "host": os.getenv("POSTGRES_HOST", "host.docker.internal"),
+        "host": os.getenv("POSTGRES_HOST", "postgres"),
         "port": os.getenv("POSTGRES_PORT", "5432"),
-        "user": os.getenv("POSTGRES_USER", "crm_user"),
-        "password": os.getenv("POSTGRES_PASSWORD", "crm_password"),
-        "dbname": os.getenv("POSTGRES_DB", "crm_warehouse"),
+        "user": os.getenv("POSTGRES_USER", "postgres"),
+        "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
+        "dbname": os.getenv("POSTGRES_DB", "postgres"),
     }
 
 
@@ -56,7 +56,15 @@ def raw_connection():
 
 
 def execute_sql_file(path: str | Path) -> None:
-    """Execute a .sql file as a single batch. Used in Stage 5."""
+    """Execute a .sql file as a single batch."""
     sql = Path(path).read_text(encoding="utf-8")
     with raw_connection() as conn, conn.cursor() as cur:
         cur.execute(sql)
+
+
+def execute_sql_directory(directory_path: str | Path) -> None:
+    """Execute all .sql files in a directory in alphabetical order."""
+    path = Path(directory_path)
+    sql_files = sorted(path.glob("*.sql"))
+    for sql_file in sql_files:
+        execute_sql_file(sql_file)

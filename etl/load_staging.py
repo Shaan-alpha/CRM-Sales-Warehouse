@@ -119,7 +119,7 @@ def main() -> int:
                     total += n
     except Exception as e:
         log.error("Load failed, transaction rolled back: %s", e)
-        return 1
+        raise
 
     log.info(
         "Load complete: %d rows across %d tables (%d failures)",

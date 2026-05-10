@@ -45,7 +45,7 @@ def main() -> int:
                 log.info("  ok")
     except Exception as e:
         log.error("Transform failed, rolling back: %s", e)
-        return 1
+        raise
 
     log.info("Transform complete.")
     return 0

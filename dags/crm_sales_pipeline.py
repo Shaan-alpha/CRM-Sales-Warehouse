@@ -5,6 +5,7 @@ from etl.extract import main as extract_main
 from etl.load_staging import main as load_main
 from etl.transform_warehouse import main as transform_main
 from etl.quality_checks import main as quality_main
+from etl.init_db import main as init_main
 
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sdk import DAG
@@ -27,6 +28,11 @@ with DAG(
     catchup=False,
     tags=["crm", "etl", "warehouse"],
 ) as dag:
+
+    init_warehouse = PythonOperator(
+        task_id="init_warehouse",
+        python_callable=init_main,
+    )
 
     with TaskGroup(group_id="extraction") as extraction_group:
 
@@ -68,4 +74,4 @@ with DAG(
             python_callable=quality_main,
         )
 
-    extraction_group >> loading_group >> transformation_group >> validation_group
+    init_warehouse >> extraction_group >> loading_group >> transformation_group >> validation_group

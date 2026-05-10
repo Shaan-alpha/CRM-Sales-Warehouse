@@ -1,8 +1,8 @@
 # CRM + Sales Warehouse
 
-End-to-end data engineering project on the **Maven Analytics CRM + Sales** dataset. Raw operational CSVs are extracted, cleaned, loaded into a containerised Postgres warehouse, modelled into a star schema, validated with SQL data-quality checks, and surfaced through a five-page Power BI executive dashboard.
+End-to-end data engineering project on the **Maven Analytics CRM + Sales** dataset. Raw operational CSVs are extracted, cleaned, and loaded into a containerised Postgres warehouse. The pipeline is orchestrated by **Apache Airflow (Astronomer)**, modeled with **dbt**, validated with SQL quality checks, and surfaced through a five-page Power BI executive dashboard.
 
-**Stack (all free):** Python 3.11 · pandas · PostgreSQL 16 (Docker) · pyarrow · Power BI Desktop
+**Stack:** Python 3.11 · Airflow · dbt · PostgreSQL 16 · Docker · Power BI
 
 ## Status
 
@@ -58,15 +58,27 @@ Parquet snapshots (data/staging)
       │  load_staging.py
       ▼
 Postgres · staging schema
-      │  transform_warehouse.py  (SQL: dim_date, dimensions, fact_sales)
+      │
       ▼
+┌──────────────────────────┐
+│    Apache Airflow        │
+│    (Orchestration)       │
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────┐
+│         dbt              │
+│    (Transformation)      │
+└──────────┬───────────────┘
+           │
+           ▼
 Postgres · warehouse schema (star)
-      │  quality_checks.py  (SQL row counts, null/PK/FK, freshness)
+      │  quality_checks.py
       ▼
 Power BI Desktop  →  powerbi/powerbicrm_dashboard.pbix
 ```
 
-Orchestration is a single Python entry point — [`etl/run_pipeline.py`](etl/run_pipeline.py) — which runs every stage in order and halts immediately if any stage fails, so bad data never reaches the warehouse.
+The pipeline is managed by **Astronomer (Airflow)**. The DAG defined in [`dags/crm_sales_pipeline.py`](dags/crm_sales_pipeline.py) orchestrates the end-to-end flow, while **dbt** (in [`crm_warehouse_dbt/`](crm_warehouse_dbt/)) handles the modular transformations within the warehouse.
 
 ## Star schema
 
@@ -81,19 +93,20 @@ Surrogate keys on every dim, conformed `date_key` across the model, fact grain =
 
 ```
 crm-sales-warehouse/
+├── .astro/                     # Astronomer CLI config
+├── .github/workflows/          # CI/CD (GitHub Actions)
+├── crm_warehouse_dbt/          # dbt project for warehouse modeling
+├── dags/                       # Airflow DAGs
 ├── etl/
 │   ├── extract.py              # CSV → cleaned parquet snapshots
 │   ├── load_staging.py         # parquet → Postgres staging
-│   ├── transform_warehouse.py  # staging → star schema (executes sql/transformations/*.sql)
+│   ├── transform_warehouse.py  # (Legacy) staging → star schema
 │   ├── quality_checks.py       # row counts, nulls, PK/FK, freshness
-│   ├── run_pipeline.py         # orchestrator — runs all four stages
+│   ├── run_pipeline.py         # (Legacy) orchestrator
 │   └── utils/
 │       ├── db.py               # SQLAlchemy engine + Postgres connection helpers
 │       └── logger.py
-├── sql/
-│   ├── ddl/                    # CREATE SCHEMA + tables (staging, warehouse)
-│   ├── transformations/        # dim_date, dimensions, fact_sales
-│   └── quality_checks/         # checks.sql
+├── sql/                        # Raw SQL for legacy transforms and checks
 ├── powerbi/
 │   └── powerbicrm_dashboard.pbix   # final 5-page Power BI report
 ├── data/
@@ -103,8 +116,9 @@ crm-sales-warehouse/
 ├── docs/
 │   ├── data_dictionary.csv     # column-level definitions
 │   ├── roadmap.md              # build journal
-│   └── screenshots/            # dashboard screenshots used in this README
+│   └── screenshots/            # dashboard screenshots
 ├── docker-compose.yml          # Postgres 16 + pgAdmin
+├── Dockerfile                  # Astro runtime image
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -124,39 +138,55 @@ Column-level definitions live in [`docs/data_dictionary.csv`](docs/data_dictiona
 
 ## Run it locally
 
-### 1. Start Postgres
+### 1. Start Infrastructure
 
+You can run the warehouse alone via Docker Compose, or the full orchestration suite via Astro.
+
+**Option A: Simple (Postgres + pgAdmin)**
 ```powershell
 docker compose up -d
 ```
 
-This brings up Postgres 16 on `localhost:5432` and pgAdmin on `localhost:5050`. Schemas `stg` and `dw` are created on first start via the DDL scripts in `sql/ddl/`.
+**Option B: Full (Airflow + Postgres)**
+```powershell
+astro dev start
+```
 
-### 2. Set up Python
+### 2. Set up Python & dbt
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+# Install dbt-postgres if not present
+pip install dbt-postgres
 copy .env.example .env
-# edit .env — set POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
 ```
 
-### 3. Drop the CSVs
+### 3. Initialize dbt
+
+```powershell
+cd crm_warehouse_dbt
+dbt debug
+dbt run
+```
+
+### 4. Drop the CSVs
 
 Place the four Maven Analytics CSVs in `data/raw/`.
 
-### 4. Run the full pipeline
+### 5. Run the Airflow Pipeline
 
-```powershell
-python -m etl.run_pipeline
-```
+Access the Airflow UI at `localhost:8080` (default: `admin`/`admin`) and trigger the `crm_sales_warehouse_pipeline` DAG.
 
-This runs **extract → load → transform → quality checks** sequentially. Any stage that fails halts the run with a non-zero exit code.
+## CI/CD
 
-### 5. Open the dashboard
+This project uses **GitHub Actions** for:
+- **Linting**: Ruff for Python code quality.
+- **Testing**: Pytest for ETL logic.
+- **Validation**: Automated DAG integrity checks.
 
-Open [`powerbi/powerbicrm_dashboard.pbix`](powerbi/powerbicrm_dashboard.pbix) in Power BI Desktop. Refresh the data source to point at your local Postgres (`dw` schema).
+See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for details.
 
 ## Data-quality checks
 

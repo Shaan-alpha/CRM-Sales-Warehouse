@@ -43,12 +43,11 @@ Five-page report on top of the warehouse:
 
 Calculation groups (`_Measures`) and a what-if `Parameter` for the recovery-rate slider.
 
-## Stage 8 — Orchestration (descoped from Airflow) ✅
-Originally planned to use Airflow; for project scope a single Python orchestrator was sufficient. [`etl/run_pipeline.py`](../etl/run_pipeline.py) runs every stage in order and halts on any non-zero exit code. Easy to swap for an Airflow DAG later if needed.
+## Stage 8 — Orchestration (Migrated to Airflow) ✅
+Successfully migrated from a simple Python orchestrator to **Apache Airflow**. Integrated Astronomer CLI for local development and management. The DAG [`dags/crm_sales_pipeline.py`](../dags/crm_sales_pipeline.py) now manages the full end-to-end execution.
 
-## Stage 9 — Polish ✅
-- README rewritten with architecture diagram, star schema, dashboard screenshots, run-it-locally steps
-- Raw CSVs and `data/staging/` Parquet outputs gitignored
-- Power BI file moved to dedicated `powerbi/` folder
-- Empty scaffolding folders removed
-- License added (MIT)
+## Stage 9 — Warehouse Modeling (Migrated to dbt) ✅
+Introduced **dbt** for modular, version-controlled warehouse transformations. The logic previously in `sql/transformations/` is being transitioned to the `crm_warehouse_dbt/` project for better testing and documentation.
+
+## Stage 10 — CI/CD ✅
+Implemented GitHub Actions workflow in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) to automate linting, unit tests, and DAG validation on every push.

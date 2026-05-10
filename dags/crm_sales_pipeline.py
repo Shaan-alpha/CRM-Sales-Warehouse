@@ -9,6 +9,7 @@ from etl.quality_checks import main as quality_main
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sdk import DAG
 from airflow.sdk.definitions.taskgroup import TaskGroup
+from etl.dbt_runner import run_dbt_models, run_dbt_tests
 
 PROJECT_ROOT = Path("/usr/local/airflow")
 
@@ -47,6 +48,18 @@ with DAG(
             task_id="transform_warehouse",
             python_callable=transform_main,
         )
+
+        dbt_run = PythonOperator(
+            task_id="dbt_run",
+            python_callable=run_dbt_models,
+        )
+
+        dbt_test = PythonOperator(
+            task_id="dbt_test",
+            python_callable=run_dbt_tests,
+        )
+
+        transform_warehouse >> dbt_run >> dbt_test
 
     with TaskGroup(group_id="validation") as validation_group:
 

@@ -6,6 +6,14 @@
 [![dbt](https://img.shields.io/badge/dbt-1.10.0-orange.svg)](https://www.getdbt.com/)
 [![Airflow](https://img.shields.io/badge/Airflow-Astro-red.svg)](https://www.astronomer.io/)
 
+[![GitHub Release](https://img.shields.io/github/v/release/Shaan-alpha/CRM-Sales-Warehouse?style=for-the-badge&color=ff0000)](https://github.com/Shaan-alpha/CRM-Sales-Warehouse/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/Shaan-alpha/CRM-Sales-Warehouse?style=for-the-badge&color=ffd700)](https://github.com/Shaan-alpha/CRM-Sales-Warehouse/stargazers)
+[![GitHub Sponsor](https://img.shields.io/badge/Sponsor-Pink?style=for-the-badge&logo=githubsponsors&logoColor=white&color=ea4aaa)](https://github.com/sponsors/Shaan-alpha)
+[![Discussions](https://img.shields.io/badge/Discussions-Active-brightgreen?style=for-the-badge&logo=github)](https://github.com/Shaan-alpha/CRM-Sales-Warehouse/discussions)
+
+> [!NOTE]
+> 💬 **Join the Community!** Have questions about configuring Apache Airflow with Docker, dbt data modeling, or DAX measures in Power BI? Join our [GitHub Discussions](https://github.com/Shaan-alpha/CRM-Sales-Warehouse/discussions)!
+
 A modern, production-grade data engineering project featuring a full ETL/ELT pipeline for the **Maven Analytics CRM + Sales** dataset. This platform extracts raw operational data, transforms it into a robust star schema using **dbt**, and delivers actionable insights through a 5-page **Power BI** executive dashboard.
 
 ---
@@ -30,22 +38,52 @@ The pipeline follows a **Medallion-style** approach modified for a Warehouse:
 
 ### 🔄 Pipeline Workflow
 ```mermaid
-graph TD
-    A[Raw CSVs] -->|extract.py| B[Parquet Snapshots]
-    B -->|load_staging.py| C[(Postgres Staging)]
-    C -->|dbt run| D[(Postgres Warehouse)]
-    D -->|dbt test| D
-    D -->|quality_checks.py| E[Validated Data]
-    E -->|Direct Query/Import| F[Power BI Dashboard]
-    
-    subgraph Orchestration
-    G[Apache Airflow / Astro]
+flowchart TD
+    subgraph Ingestion ["📤 Ingestion & Storage"]
+        Raw["Raw Data (Maven Analytics CSVs)"]
+        Parquet[("📦 Parquet Snapshots\n(Immutable Raw Lake)")]
     end
-    
-    G -.-> A
-    G -.-> B
-    G -.-> C
-    G -.-> D
+
+    subgraph Staging ["🐘 PostgreSQL Staging"]
+        PGStaging[("raw.sales_staging\n(Raw Tables)")]
+    end
+
+    subgraph Transformation ["⚡ dbt Core Transformations"]
+        DBTModels[("analytics.dim_* & fact_*\n(Star Schema Models)")]
+        DBTTests{"🔍 dbt Validation\n(Schema & Data Tests)"}
+    end
+
+    subgraph Quality ["🛡️ Quality & Governance"]
+        Checks["quality_checks.py\n(Parity & Integrity Suite)"]
+    end
+
+    subgraph BI ["📊 Business Intelligence"]
+        PBI["Microsoft Power BI\n(5-Page Executive Report)"]
+    end
+
+    Raw -->|"extract.py"| Parquet
+    Parquet -->|"load_staging.py"| PGStaging
+    PGStaging -->|"dbt run"| DBTModels
+    DBTModels -->|"dbt test"| DBTTests
+    DBTTests -->|"Pass"| Checks
+    Checks -->|"Validated"| PBI
+
+    subgraph Orchestration ["⚙️ Apache Airflow (Astro CLI)"]
+        Airflow["Task & DAG Orchestration"]
+    end
+
+    Airflow -.-> Raw
+    Airflow -.-> PGStaging
+    Airflow -.-> DBTModels
+
+    style Raw fill:#e53935,stroke:#333,stroke-width:2px,color:#fff
+    style Parquet fill:#fb8c00,stroke:#333,stroke-width:2px,color:#fff
+    style PGStaging fill:#1e88e5,stroke:#333,stroke-width:2px,color:#fff
+    style DBTModels fill:#43a047,stroke:#333,stroke-width:2px,color:#fff
+    style DBTTests fill:#8e24aa,stroke:#333,stroke-width:2px,color:#fff
+    style Checks fill:#00acc1,stroke:#333,stroke-width:2px,color:#fff
+    style PBI fill:#fbc02d,stroke:#333,stroke-width:2px,color:#000
+    style Airflow fill:#37474f,stroke:#ffd54f,stroke-width:2px,color:#fff
 ```
 
 ### 🖥️ Infrastructure Overview
